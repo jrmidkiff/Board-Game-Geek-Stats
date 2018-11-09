@@ -73,23 +73,75 @@ scythe_plays_no_automa <- as_tibble(bind_rows(scythe_plays_no_automa)) %>%
               median_score = median(score), 
               wins = sum(winner), 
               win_perc = wins / games_played) %>% 
-    arrange(desc(median_faction_score)))
+    arrange(desc(median_faction_score)) %>% 
+    mutate(role = fct_reorder(role, median_faction_score)))
 
 # Initial Graph - No Automa
-ggplot(final_scythe_plays_no_automa, aes(x = role, y = median_faction_score, fill = role)) +
+faction_colors <- c("Albion" = "#4A7A36", 
+                    "Togawa" = "#6A3897", 
+                    "Crimea" = "#F3AA38", 
+                    "Nordic" = "#6ABDE6", 
+                    "Polonia" = "#FFFFFF", 
+                    "Rusviet" = "#EA162C", 
+                    "Saxony" = "#222222")
+faction_backgrounds <- c("Albion" = "black", 
+                         "Togawa" = "black", 
+                         "Crimea" = "black", 
+                         "Nordic" = "black", 
+                         "Polonia" = "black", 
+                         "Rusviet" = "black", 
+                         "Saxony" = "white")
+
+ggplot(final_scythe_plays_no_automa, aes(x = role, y = median_faction_score, color = role, fill = role)) +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1.5) +
   geom_col(color = "black", size = 1) +
-  scale_fill_manual(values = c("Albion" = "#4A7A36", 
-                           "Togawa" = "#6A3897", 
-                           "Crimea" = "#F3AA38", 
-                           "Nordic" = "#6ABDE6", 
-                           "Polonia" = "#FFFFFF", 
-                           "Rusviet" = "#EA162C", 
-                           "Saxony" = "#222222")) +
+  geom_label(aes(label = percent(median_faction_score), y = median_faction_score + 0.04),  fontface = "bold", 
+             label.padding = unit(0.3, "lines")) +
+  scale_color_manual(values = faction_backgrounds) +
+  scale_fill_manual(values = faction_colors) +
   labs(title = "Median Faction Score as a Percentage of Winning Score (Automa Excluded)", 
        caption = str_c("Instances in which the automa controlled a faction are excluded.\n", 
                        "In those games, the highest score by a player-controlled faction was declared the winning score.")) + 
   scale_y_continuous(labels = percent) +
   theme(legend.position = "none", 
         axis.title = element_blank())
+  
         
+#boxplot
+ggplot(scythe_plays_no_automa %>% mutate(role = factor(role), role = fct_reorder(role, percent_of_victory, .fun = "median")), 
+       aes(x = role, y = percent_of_victory, fill = role, group = role)) +
+  geom_boxplot(color = "black", size = 1) +
+  geom_jitter(size = 2, width = 0.225, shape = 23) + 
+  scale_fill_manual(values = c("Albion" = "#4A7A36", 
+                             "Togawa" = "#6A3897", 
+                             "Crimea" = "#F3AA38", 
+                             "Nordic" = "#6ABDE6", 
+                             "Polonia" = "#FFFFFF", 
+                             "Rusviet" = "#EA162C", 
+                             "Saxony" = "#222222")) +  
+  labs(title = "Median Faction Score as a Percentage of Winning Score (Automa Excluded)", 
+       caption = str_c("Instances in which the automa controlled a faction are excluded.\n", 
+                       "In those games, the highest score by a player-controlled faction was declared the winning score.")) + 
+  scale_y_continuous(labels = percent) +
+  theme(legend.position = "none", 
+        axis.title = element_blank())
+
+#violin
+ggplot(scythe_plays_no_automa %>% mutate(role = factor(role), role = fct_reorder(role, percent_of_victory, .fun = "median")), 
+       aes(x = role, y = percent_of_victory, fill = role, group = role)) +
+  geom_violin(color = "black", size = 1) +
+  geom_jitter(size = 2, width = 0.225, shape = 23) + 
+  scale_fill_manual(values = c("Albion" = "#4A7A36", 
+                               "Togawa" = "#6A3897", 
+                               "Crimea" = "#F3AA38", 
+                               "Nordic" = "#6ABDE6", 
+                               "Polonia" = "#FFFFFF", 
+                               "Rusviet" = "#EA162C", 
+                               "Saxony" = "#222222")) +  
+  labs(title = "Median Faction Score as a Percentage of Winning Score (Automa Excluded)", 
+       caption = str_c("Instances in which the automa controlled a faction are excluded.\n", 
+                       "In those games, the highest score by a player-controlled faction was declared the winning score.")) + 
+  scale_y_continuous(labels = percent) +
+  theme(legend.position = "none", 
+        axis.title = element_blank())       
 ```
