@@ -5,8 +5,11 @@ library(jsonlite)
 library(tidyverse)
 library(scales)
 
-# data <- as.list(fromJSON(txt = "C:/jmidkiff/Personal Work/BGStatsExport.json"))
-data <- as.list(fromJSON(txt = "D:/Everything/R/BGG Stats/BGStatsExport.json"))
+setwd("C:/jmidkiff/Personal Work/")
+data <- as.list(fromJSON(txt = "BGStatsExport.json"))
+
+# setwd("D:/Everything/R/BGG Stats/")
+# data <- as.list(fromJSON(txt = "BGStatsExport.json"))
 
 plays <- as_tibble(data$plays)
 games <- as_tibble(data$games)
@@ -86,12 +89,12 @@ faction_colors <- c("Albion" = "#4A7A36",
                     "Rusviet" = "#EA162C", 
                     "Saxony" = "#222222")
 faction_backgrounds <- c("Albion" = "black", 
-                         "Togawa" = "grey90", 
+                         "Togawa" = "grey80", 
                          "Crimea" = "black", 
                          "Nordic" = "black", 
                          "Polonia" = "black", 
                          "Rusviet" = "black", 
-                         "Saxony" = "grey90")
+                         "Saxony" = "grey70")
 
 ggplot(final_scythe_plays_no_automa, aes(x = role, y = median_faction_score, color = role, fill = role)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1.5) +
@@ -108,29 +111,42 @@ ggplot(final_scythe_plays_no_automa, aes(x = role, y = median_faction_score, col
   labs(title = "SCYTHE - Median Relative Faction Score as a Percentage of Winning Score", 
        subtitle = "(Automa Excluded)",
        caption = str_c("Instances in which the automa controlled a faction are excluded.\n", 
-                       "In those games, the highest score by a player-controlled faction was declared the winning score.")) + 
+                       "In those games, the highest score by a player-controlled faction was declared the winning score.\n\n", 
+                       "Last Recorded Game: ", format(as.Date(max(scythe_plays$date)), "%m/%d/%y"))) + 
   scale_y_continuous(labels = percent) +
   theme(legend.position = "none", 
         axis.title = element_blank(), 
-        plot.title = element_text(size = 16))
+        plot.title = element_text(size = 16), 
+        plot.caption = element_text(hjust = 0, margin = margin(t = 15)))
 
+ggsave(filename = "Scythe_No_Automa_Col.pdf", width = 8.3, height = 9.1, units = "in")
 
 #boxplot
 ggplot(scythe_plays_no_automa %>% mutate(role = factor(role), role = fct_reorder(role, percent_of_victory, .fun = "median")), 
        aes(x = role, y = percent_of_victory, fill = role, group = role, color = role)) +
-  geom_hline(yintercept = 1, size = 1) +
-  geom_boxplot(color = "black", size = 1) +
-  geom_jitter(size = 2.5, width = 0.27, shape = 23) + 
+  geom_col(data = final_scythe_plays_no_automa, aes(x = role, y = 1.1),
+           size = 0, alpha = 0.3, color = NA, width = 1) +
+  geom_hline(yintercept = 1, size = 1.25) +
+  geom_boxplot(color = "black", size = 1, coef = 0, outlier.alpha = 0) +
+  geom_jitter(size = 3, width = 0.29, shape = 23, stroke = 1.1) + 
   scale_fill_manual(values = faction_colors) +  
   scale_color_manual(values = faction_backgrounds) +
-  labs(title = "Individual Relative Faction Scores as a Percentage of Game-Winning Score (Automa Excluded)", 
+  labs(title = "SCYTHE - Individual Relative Faction Scores as a Percentage of Game-Winning Score",
+       subtitle = "(Automa Excluded)", 
        caption = str_c("Each dot represents a faction's score relative to the winning score in that game.\n", 
-                       "The boxplot represents a faction's median relative score (horizontal black line), and the\nrange containing the 25%-75% percentile of a faction's relative game scores (box boundaries).\n\n",
+                       "The horizontal black lines represent each faction's median relative score.\n", 
+                       "The box plot boundaries encompass the 25th-75th percentiles of a faction's relative game scores.\n\n",
                        "Instances in which the automa controlled a faction are excluded.\n", 
-                       "In those games, the highest score by a player-controlled faction was declared the winning score.")) + 
+                       "In those games, the highest score by a player-controlled faction was declared the winning score.\n\n", 
+                       "Last Recorded Game: ", format(as.Date(max(scythe_plays$date)), "%m/%d/%y"))) + 
   scale_y_continuous(labels = percent_format(accuracy = 1)) +
   theme(legend.position = "none", 
-        axis.title = element_blank())
+        axis.title = element_blank(), 
+        plot.caption = element_text(hjust = 0, margin = margin(t = 15)), 
+        panel.background = element_rect(fill = "grey90")) +
+  coord_cartesian(ylim = c(0, 1.05), expand = F)
+
+ggsave(filename = "Scythe_No_Automa_Box.pdf", width = 8.3, height = 9.5, units = "in")
 
 #violin
 # ggplot(scythe_plays_no_automa %>% mutate(role = factor(role), role = fct_reorder(role, percent_of_victory, .fun = "median")), 
@@ -153,9 +169,9 @@ ggplot(scythe_plays_no_automa %>% mutate(role = factor(role), role = fct_reorder
 
 ##### Rising Sun #####
 (rising_sun <- games_joined %>% 
-  filter(bggName == "Rising Sun") %>% 
-  select(bggId.y, bggName, playerScores, playDate, locationRefId) %>% 
-  rename(bggId = bggId.y))
+   filter(bggName == "Rising Sun") %>% 
+   select(bggId.y, bggName, playerScores, playDate, locationRefId) %>% 
+   rename(bggId = bggId.y))
 
 rising_sun_plays <- vector("list", length = nrow(rising_sun))
 for (session in 1:nrow(rising_sun)) {
@@ -177,7 +193,7 @@ for (session in 1:nrow(rising_sun)) {
 }
 
 (rising_sun_plays <- as_tibble(bind_rows(rising_sun_plays)) %>% 
-  filter(!is.na(score)))
+    filter(!is.na(score)))
 
 (final_rising_sun_plays <- rising_sun_plays %>% 
     group_by(role) %>% 
@@ -221,9 +237,37 @@ ggplot(final_rising_sun_plays, aes(x = role, y = median_faction_score, color = r
                          " Valid Games Recorded"), size = 5, fontface = "italic") +
   scale_color_manual(values = faction_backgrounds) +
   scale_fill_manual(values = faction_colors) +
-  labs(title = "RISING SUN - Median Relative Faction Score as a Percentage of Winning Score") + 
+  labs(title = "RISING SUN - Median Relative Faction Score as a Percentage of Winning Score", 
+       caption = str_c("Last Recorded Game: ", 
+                       format(as.Date(max(rising_sun_plays$date)), "%m/%d/%y"))) + 
   scale_y_continuous(labels = percent) +
   theme(legend.position = "none", 
         axis.title = element_blank(), 
-        plot.title = element_text(size = 16))
+        plot.title = element_text(size = 16), 
+        plot.caption = element_text(hjust = 0, margin = margin(t = 15))) 
+
+ggsave(filename = "Rising_Sun_Col.pdf", width = 8.8, height = 9.1, units = "in")
+
+#Boxplot
+ggplot(rising_sun_plays %>% mutate(role = factor(role), role = fct_reorder(role, percent_of_victory, .fun = "median")), 
+       aes(x = role, y = percent_of_victory, fill = role, group = role, color = role)) +
+  geom_col(data = final_rising_sun_plays, aes(x = role, y = 1.1),
+           size = 0, alpha = 0.3, color = NA, width = 1) +
+  geom_hline(yintercept = 1, size = 1.25) +
+  geom_boxplot(color = "black", size = 1, outlier.alpha = 0, coef = 0) +
+  geom_jitter(size = 2.5, width = 0.27, shape = 23, stroke = 1.1) + 
+  scale_fill_manual(values = faction_colors) +  
+  scale_color_manual(values = faction_backgrounds) +
+  labs(title = "RISING SUN - Individual Relative Faction Scores as a Percentage of Game-Winning Score", 
+       caption = str_c("Each dot represents a faction's score relative to the winning score in that game.\n", 
+                       "The horizontal black lines represent each faction's median relative score.\n", 
+                       "The box plot boundaries encompass the 25th-75th percentiles of a faction's relative game scores.\n\n",
+                       "Last Recorded Game: ", format(as.Date(max(rising_sun_plays$date)), "%m/%d/%y"))) + 
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  theme(legend.position = "none", 
+        axis.title = element_blank(), 
+        plot.caption = element_text(hjust = 0, margin = margin(t = 15))) +
+  coord_cartesian(ylim = c(0, 1.05), expand = F)
+
+ggsave(filename = "Rising_Sun_Box.pdf", width = 8.8, height = 9.5, units = "in")
 ```
